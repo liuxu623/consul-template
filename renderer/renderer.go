@@ -8,6 +8,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -25,11 +29,13 @@ var (
 
 	// ErrMissingDest is the error returned with the destination is empty.
 	ErrMissingDest = errors.New("missing destination")
+
+	validUnixTimestamp = regexp.MustCompile(`^[0-9]{10}$`)
 )
 
 // RenderInput is used as input to the render function.
 type RenderInput struct {
-	Backup         bool
+	Backup         int
 	Contents       []byte
 	CreateDestDirs bool
 	Dry            bool
@@ -102,7 +108,7 @@ func Render(i *RenderInput) (*RenderResult, error) {
 //
 // If no errors occur, the Tempfile is "renamed" (moved) to the destination
 // path.
-func AtomicWrite(path string, createDestDirs bool, contents []byte, perms os.FileMode, backup bool) error {
+func AtomicWrite(path string, createDestDirs bool, contents []byte, perms os.FileMode, backup int) error {
 	if path == "" {
 		return ErrMissingDest
 	}
@@ -164,10 +170,32 @@ func AtomicWrite(path string, createDestDirs bool, contents []byte, perms os.Fil
 
 	// If we got this far, it means we are about to save the file. Copy the
 	// current contents of the file onto disk (if it exists) so we have a backup.
-	if backup {
+	if backup >= 0 {
 		if _, err := os.Stat(path); !os.IsNotExist(err) {
-			if err := copyFile(path, path+".bak"); err != nil {
+			if err := copyFile(path, path+"."+strconv.FormatInt(time.Now().Unix(), 10)); err != nil {
 				return err
+			}
+		}
+		if backup > 0 {
+			fileInfos, err := ioutil.ReadDir(parent)
+			if err != nil {
+				return err
+			}
+			var backups []string
+			base := filepath.Base(path)
+			for _, fileInfo := range fileInfos {
+				if !fileInfo.IsDir() &&
+					strings.HasPrefix(fileInfo.Name(), base+".") &&
+					validUnixTimestamp.MatchString(fileInfo.Name()[len(base+"."):]) {
+					backups = append(backups, fileInfo.Name())
+				}
+			}
+			if len(backups) > backup {
+				for i := 0; i < len(backups)-backup; i++ {
+					if err := os.Remove(parent + "/" + backups[i]); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}

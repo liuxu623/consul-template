@@ -469,10 +469,11 @@ template {
   perms = 0600
 
   # This option backs up the previously rendered template at the destination
-  # path before writing a new one. It keeps exactly one backup. This option is
-  # useful for preventing accidental changes to the data without having a
-  # rollback strategy.
-  backup = true
+  # path before writing a new one. If backup < 0, it means disable save backup
+  # files; If backup = 0, it means keep all backup files; If backup > 0, it
+  # means keep `the number of backup` files. This option is useful for preventing
+  # accidental changes to the data without having a rollback strategy.
+  backup = -1
 
   # These are the delimiters to use in the template. The default is "{{" and
   # "}}", but for some templates, it may be easier to use a different delimiter

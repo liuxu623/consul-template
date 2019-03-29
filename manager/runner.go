@@ -749,7 +749,7 @@ func (r *Runner) runTemplate(tmpl *template.Template, runCtx *templateRunCtx) (*
 
 		// Render the template, taking dry mode into account
 		result, err := renderer.Render(&renderer.RenderInput{
-			Backup:         config.BoolVal(templateConfig.Backup),
+			Backup:         config.IntVal(templateConfig.Backup),
 			Contents:       result.Output,
 			CreateDestDirs: config.BoolVal(templateConfig.CreateDestDirs),
 			Dry:            r.dry,

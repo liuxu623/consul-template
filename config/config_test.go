@@ -564,12 +564,12 @@ func TestParse(t *testing.T) {
 		{
 			"template_backup",
 			`template {
-				backup = true
+				backup = 1
 			}`,
 			&Config{
 				Templates: &TemplateConfigs{
 					&TemplateConfig{
-						Backup: Bool(true),
+						Backup: Int(1),
 					},
 				},
 			},

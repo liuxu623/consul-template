@@ -29,7 +29,7 @@ var (
 type TemplateConfig struct {
 	// Backup determines if this template should retain a backup. The default
 	// value is false.
-	Backup *bool `mapstructure:"backup"`
+	Backup *int `mapstructure:"backup"`
 
 	// Command is the arbitrary command to execute after a template has
 	// successfully rendered. This is DEPRECATED. Use Exec instead.
@@ -203,7 +203,7 @@ func (c *TemplateConfig) Merge(o *TemplateConfig) *TemplateConfig {
 // values.
 func (c *TemplateConfig) Finalize() {
 	if c.Backup == nil {
-		c.Backup = Bool(false)
+		c.Backup = Int(-1)
 	}
 
 	if c.Command == nil {
@@ -286,7 +286,7 @@ func (c *TemplateConfig) GoString() string {
 		"LeftDelim:%s, "+
 		"RightDelim:%s"+
 		"}",
-		BoolGoString(c.Backup),
+		IntGoString(c.Backup),
 		StringGoString(c.Command),
 		TimeDurationGoString(c.CommandTimeout),
 		StringGoString(c.Contents),

@@ -23,7 +23,7 @@ func TestTemplateConfig_Copy(t *testing.T) {
 		{
 			"same_enabled",
 			&TemplateConfig{
-				Backup:         Bool(true),
+				Backup:         Int(1),
 				Command:        String("command"),
 				CommandTimeout: TimeDuration(10 * time.Second),
 				Contents:       String("contents"),
@@ -82,27 +82,27 @@ func TestTemplateConfig_Merge(t *testing.T) {
 		},
 		{
 			"backup_overrides",
-			&TemplateConfig{Backup: Bool(true)},
-			&TemplateConfig{Backup: Bool(false)},
-			&TemplateConfig{Backup: Bool(false)},
+			&TemplateConfig{Backup: Int(1)},
+			&TemplateConfig{Backup: Int(-1)},
+			&TemplateConfig{Backup: Int(-1)},
 		},
 		{
 			"backup_empty_one",
-			&TemplateConfig{Backup: Bool(true)},
+			&TemplateConfig{Backup: Int(1)},
 			&TemplateConfig{},
-			&TemplateConfig{Backup: Bool(true)},
+			&TemplateConfig{Backup: Int(1)},
 		},
 		{
 			"backup_empty_two",
 			&TemplateConfig{},
-			&TemplateConfig{Backup: Bool(true)},
-			&TemplateConfig{Backup: Bool(true)},
+			&TemplateConfig{Backup: Int(1)},
+			&TemplateConfig{Backup: Int(1)},
 		},
 		{
 			"backup_same",
-			&TemplateConfig{Backup: Bool(true)},
-			&TemplateConfig{Backup: Bool(true)},
-			&TemplateConfig{Backup: Bool(true)},
+			&TemplateConfig{Backup: Int(1)},
+			&TemplateConfig{Backup: Int(1)},
+			&TemplateConfig{Backup: Int(1)},
 		},
 		{
 			"command_overrides",
@@ -414,7 +414,7 @@ func TestTemplateConfig_Finalize(t *testing.T) {
 			"empty",
 			&TemplateConfig{},
 			&TemplateConfig{
-				Backup:         Bool(false),
+				Backup:         Int(-1),
 				Command:        String(""),
 				CommandTimeout: TimeDuration(DefaultTemplateCommandTimeout),
 				Contents:       String(""),

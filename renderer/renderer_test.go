@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -25,7 +26,7 @@ func TestAtomicWrite(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := AtomicWrite(outFile.Name(), true, nil, 0644, false); err != nil {
+		if err := AtomicWrite(outFile.Name(), true, nil, 0644, -1); err != nil {
 			t.Fatal(err)
 		}
 
@@ -46,7 +47,7 @@ func TestAtomicWrite(t *testing.T) {
 		}
 		os.Chmod(outFile.Name(), 0600)
 
-		if err := AtomicWrite(outFile.Name(), true, nil, 0, false); err != nil {
+		if err := AtomicWrite(outFile.Name(), true, nil, 0, -1); err != nil {
 			t.Fatal(err)
 		}
 
@@ -71,7 +72,7 @@ func TestAtomicWrite(t *testing.T) {
 
 		// Try AtomicWrite to a file that doesn't exist yet
 		file := filepath.Join(outDir, "nope/not/it/create")
-		if err := AtomicWrite(file, true, nil, 0644, false); err != nil {
+		if err := AtomicWrite(file, true, nil, 0644, -1); err != nil {
 			t.Fatal(err)
 		}
 
@@ -90,7 +91,7 @@ func TestAtomicWrite(t *testing.T) {
 
 		// Try AtomicWrite to a file that doesn't exist yet
 		file := filepath.Join(outDir, "nope/not/it/nope-no-create")
-		if err := AtomicWrite(file, false, nil, 0644, false); err != ErrNoParentDir {
+		if err := AtomicWrite(file, false, nil, 0644, -1); err != ErrNoParentDir {
 			t.Fatalf("expected %q to be %q", err, ErrNoParentDir)
 		}
 	})
@@ -112,19 +113,32 @@ func TestAtomicWrite(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := AtomicWrite(outFile.Name(), true, []byte("after"), 0644, true); err != nil {
+		if err := AtomicWrite(outFile.Name(), true, []byte("after"), 0644, 1); err != nil {
 			t.Fatal(err)
 		}
 
-		f, err := ioutil.ReadFile(outFile.Name() + ".bak")
+		fileInfos, err := ioutil.ReadDir(outDir)
 		if err != nil {
 			t.Fatal(err)
+		}
+		var filename string
+		base := filepath.Base(outFile.Name())
+		for _, fileInfo := range fileInfos {
+			if !fileInfo.IsDir() &&
+				strings.HasPrefix(fileInfo.Name(), base+".") &&
+				validUnixTimestamp.MatchString(fileInfo.Name()[len(base+"."):]) {
+				filename = fileInfo.Name()
+			}
+		}
+		f, err := ioutil.ReadFile(outDir + "/" + filename)
+		if err != nil {
+			t.Fatal(err.Error())
 		}
 		if !bytes.Equal(f, []byte("before")) {
 			t.Fatalf("expected %q to be %q", f, []byte("before"))
 		}
 
-		if stat, err := os.Stat(outFile.Name() + ".bak"); err != nil {
+		if stat, err := os.Stat(outDir + "/" + filename); err != nil {
 			t.Fatal(err)
 		} else {
 			if stat.Mode() != 0600 {
@@ -147,17 +161,27 @@ func TestAtomicWrite(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := AtomicWrite(outFile.Name(), true, nil, 0644, true); err != nil {
+		if err := AtomicWrite(outFile.Name(), true, nil, 0644, 1); err != nil {
 			t.Fatal(err)
 		}
 
 		// Shouldn't have a backup file, since the original file didn't exist
-		if _, err := os.Stat(outFile.Name() + ".bak"); err == nil {
-			t.Fatal("expected error")
-		} else {
-			if !os.IsNotExist(err) {
-				t.Fatalf("bad error: %s", err)
+		fileInfos, err := ioutil.ReadDir(outDir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var filename string
+		base := filepath.Base(outFile.Name())
+		for _, fileInfo := range fileInfos {
+			if !fileInfo.IsDir() &&
+				strings.HasPrefix(fileInfo.Name(), base+".") &&
+				validUnixTimestamp.MatchString(fileInfo.Name()[len(base+"."):]) {
+				filename = fileInfo.Name()
+				break
 			}
+		}
+		if filename != "" {
+			t.Fatalf("expected file %s not exists", filename)
 		}
 	})
 }
